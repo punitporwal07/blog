@@ -57,6 +57,7 @@ const year = new Date().getFullYear();
       <div class="container">
         <div class="brand">
           <a class="site-title" href={url("/")}>cloudnetes<span class="dot">.</span></a>
+          <span class="site-motto">serving to the community</span>
           <span class="site-tagline">Cloud Native · Kubernetes · DevOps</span>
         </div>
         <form class="header-search" role="search" action={url("/search")} method="get">
@@ -81,6 +82,7 @@ const year = new Date().getFullYear();
         <nav class="nav">
           <a href={url("/")}>Articles</a>
           <a href={url("/tags")}>Topics</a>
+          <a href={import.meta.env.BASE_URL.replace(/\/$/, "") + "/admin/"}>Admin</a>
           <a href="#" id="signout" class="cta">Sign out</a>
         </nav>
       </div>
