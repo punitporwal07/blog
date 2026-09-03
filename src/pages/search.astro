@@ -1,0 +1,185 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { url } from "../utils/format";
+---
+
+<BaseLayout
+  title="Search — cloudnetes"
+  description="Search the cloudnetes archive of Cloud, Kubernetes and DevOps articles."
+>
+  <h2 class="section-title">Search the archive</h2>
+  <p class="section-sub">Find articles by title, topic or content.</p>
+
+  <form class="search-form" role="search" onsubmit="return false;">
+    <label class="visually-hidden" for="search-input">Search articles</label>
+    <input
+      id="search-input"
+      type="search"
+      name="q"
+      placeholder="Search for kubernetes, terraform, weblogic…"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+      aria-describedby="search-status"
+    />
+  </form>
+
+  <p id="search-status" class="search-status" aria-live="polite"></p>
+
+  <ul id="search-results" class="card-grid"></ul>
+
+  <template id="result-template">
+    <li class="card">
+      <div class="card-body">
+        <div class="eyebrow" data-eyebrow hidden></div>
+        <h2><a data-link href="#"></a></h2>
+        <p class="excerpt" data-excerpt hidden></p>
+        <div class="card-meta"><span data-date></span></div>
+      </div>
+    </li>
+  </template>
+
+  <script is:inline define:vars={{ INDEX_URL: url("/search.json"), BLOG_BASE: url("/blog") }}>
+    (function () {
+      var input = document.getElementById("search-input");
+      var status = document.getElementById("search-status");
+      var results = document.getElementById("search-results");
+      var tpl = document.getElementById("result-template");
+      var data = [];
+      var ready = false;
+
+      function fmtDate(iso) {
+        try {
+          return new Date(iso).toLocaleDateString("en-GB", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        } catch (_) {
+          return "";
+        }
+      }
+
+      // Score a post against the query tokens. Title hits weigh most, then
+      // tags, then description, then body. Every token must match somewhere
+      // (AND semantics) for the post to be included.
+      function score(post, tokens) {
+        var title = post.title.toLowerCase();
+        var desc = (post.description || "").toLowerCase();
+        var tags = (post.tags || []).join(" ").toLowerCase();
+        var body = (post.body || "").toLowerCase();
+        var total = 0;
+        for (var i = 0; i < tokens.length; i++) {
+          var t = tokens[i];
+          var s = 0;
+          if (title.indexOf(t) !== -1) s += 10;
+          if (tags.indexOf(t) !== -1) s += 5;
+          if (desc.indexOf(t) !== -1) s += 3;
+          if (body.indexOf(t) !== -1) s += 1;
+          if (s === 0) return 0; // token missing entirely -> exclude
+          total += s;
+        }
+        return total;
+      }
+
+      function render(list, q) {
+        results.innerHTML = "";
+        if (!q) {
+          status.textContent = data.length + " articles. Start typing to search.";
+          return;
+        }
+        if (!list.length) {
+          status.textContent = 'No articles match "' + q + '".';
+          return;
+        }
+        status.textContent =
+          list.length + (list.length === 1 ? " result" : " results") + ' for "' + q + '"';
+        var frag = document.createDocumentFragment();
+        for (var i = 0; i < list.length; i++) {
+          var post = list[i];
+          var node = tpl.content.cloneNode(true);
+          var link = node.querySelector("[data-link]");
+          link.textContent = post.title;
+          link.setAttribute("href", BLOG_BASE + "/" + post.slug);
+          var eyebrow = node.querySelector("[data-eyebrow]");
+          if (post.tags && post.tags[0]) {
+            eyebrow.textContent = post.tags[0];
+            eyebrow.hidden = false;
+          }
+          var excerpt = node.querySelector("[data-excerpt]");
+          if (post.description) {
+            excerpt.textContent = post.description;
+            excerpt.hidden = false;
+          }
+          node.querySelector("[data-date]").textContent = fmtDate(post.pubDate);
+          frag.appendChild(node);
+        }
+        results.appendChild(frag);
+      }
+
+      function run() {
+        var q = input.value.trim();
+        if (!ready) {
+          status.textContent = "Loading search index…";
+          return;
+        }
+        var tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+        if (!tokens.length) {
+          render([], "");
+          return;
+        }
+        var scored = [];
+        for (var i = 0; i < data.length; i++) {
+          var s = score(data[i], tokens);
+          if (s > 0) scored.push({ s: s, post: data[i] });
+        }
+        scored.sort(function (a, b) {
+          if (b.s !== a.s) return b.s - a.s;
+          return new Date(b.post.pubDate) - new Date(a.post.pubDate);
+        });
+        render(
+          scored.map(function (x) {
+            return x.post;
+          }),
+          q
+        );
+      }
+
+      var timer = null;
+      input.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(run, 120);
+      });
+
+      // Support arriving with ?q=... (e.g. from a future header search box).
+      function initialQuery() {
+        try {
+          var p = new URLSearchParams(location.search);
+          return p.get("q") || "";
+        } catch (_) {
+          return "";
+        }
+      }
+
+      status.textContent = "Loading search index…";
+      fetch(INDEX_URL)
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (json) {
+          data = json;
+          ready = true;
+          var q = initialQuery();
+          if (q) {
+            input.value = q;
+          }
+          run();
+          input.focus();
+        })
+        .catch(function () {
+          status.textContent = "Could not load the search index.";
+        });
+    })();
+  </script>
+</BaseLayout>
