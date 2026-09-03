@@ -1,0 +1,90 @@
+# Decap CMS configuration for the cloudnetes blog.
+#
+# Backend: GitHub. The CMS authenticates the editor via GitHub OAuth, then
+# commits Markdown files straight to the repo. Only GitHub users with write
+# access to punitporwal07/blog can publish.
+#
+# GitHub OAuth cannot be completed from a purely static page, so an OAuth broker
+# is required. Set `base_url` (and `auth_endpoint`) below to your broker.
+# A free one-click broker: https://github.com/ublabs/netlify-cms-oauth (deploy
+# to Vercel/Cloudflare) or the community instance documented in the README.
+
+backend:
+  name: github
+  repo: punitporwal07/blog
+  branch: main
+  # --- OAuth broker (Cloudflare Worker in ../oauth-broker) ----------------
+  base_url: https://cloudnetes-cms-oauth.punitporwal07.workers.dev
+  auth_endpoint: /auth
+
+# Where uploaded images go, and the public URL they resolve to. The public
+# folder is served under the /blog base path, so images resolve at
+# /blog/blog-images/... to match existing posts.
+media_folder: "public/blog-images"
+public_folder: "/blog/blog-images"
+
+# Nicer commit messages for CMS-authored changes.
+site_url: https://punitporwal07.github.io/blog
+display_url: https://punitporwal07.github.io/blog
+publish_mode: editorial_workflow
+
+collections:
+  - name: "blog"
+    label: "Articles"
+    label_singular: "Article"
+    folder: "src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    preview_path: "blog/{{slug}}"
+    summary: "{{title}} — {{pubDate}}"
+    sortable_fields: ["pubDate", "title"]
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - {
+          label: "Description",
+          name: "description",
+          widget: "text",
+          required: false,
+          hint: "One-line summary shown on cards and in search results.",
+        }
+      - {
+          label: "Publish date",
+          name: "pubDate",
+          widget: "datetime",
+          date_format: "YYYY-MM-DD",
+          time_format: "HH:mm",
+        }
+      - {
+          label: "Updated date",
+          name: "updatedDate",
+          widget: "datetime",
+          date_format: "YYYY-MM-DD",
+          time_format: "HH:mm",
+          required: false,
+        }
+      - {
+          label: "Tags",
+          name: "tags",
+          widget: "list",
+          default: [],
+          required: false,
+          hint: "Lowercase, e.g. kubernetes, aws.",
+        }
+      - {
+          label: "Original URL",
+          name: "originalUrl",
+          widget: "string",
+          required: false,
+          hint: "Only for migrated Blogger posts; leave blank for new ones.",
+        }
+      - {
+          label: "Draft",
+          name: "draft",
+          widget: "boolean",
+          default: false,
+          required: false,
+          hint: "Keep out of the published site while writing.",
+        }
+      - { label: "Body", name: "body", widget: "markdown" }

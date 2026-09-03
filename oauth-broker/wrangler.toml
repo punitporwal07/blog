@@ -1,0 +1,13 @@
+name = "cloudnetes-cms-oauth"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Your site origin — locks postMessage so the token is only handed to your site.
+# OAUTH_CLIENT_ID is public (client IDs are not secret), so it's fine here.
+[vars]
+ALLOWED_ORIGIN = "https://punitporwal07.github.io"
+SCOPE = "repo"
+OAUTH_CLIENT_ID = "Ov23liVz18ne8xaBBakt"
+
+# The client SECRET is NOT stored here. Set it once with:
+#   wrangler secret put OAUTH_CLIENT_SECRET

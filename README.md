@@ -129,6 +129,75 @@ shipped to the browser (treat it as public). It only deters casual viewing.
 For genuine access control, use host-level auth (Cloudflare Access, Netlify,
 Vercel) or convert the site to Astro SSR with real server-side sessions.
 
+## Content editor (Decap CMS)
+
+An in-browser editor lives at **`/blog/admin/`** (files in `public/admin/`).
+It lets authorized people write and publish articles without touching Git
+locally: it commits Markdown straight to `src/content/blog/` on GitHub via the
+GitHub API, and the normal Pages workflow rebuilds the site.
+
+Access is controlled by **GitHub login** — only accounts with write access to
+`punitporwal07/blog` can publish. (This replaces the idea of a shared
+passphrase, which cannot be kept secret on a static site and cannot authorize a
+real write.)
+
+### One-time setup
+
+GitHub OAuth can't complete from a purely static page, so a small **OAuth
+broker** is needed. Two ways to get one:
+
+**Option A — deploy a free broker (keeps GitHub Pages hosting).**
+
+1. Create a GitHub OAuth App:
+   GitHub → Settings → Developer settings → OAuth Apps → New OAuth App.
+   - Homepage URL: `https://punitporwal07.github.io/blog`
+   - Authorization callback URL: your broker's callback (e.g.
+     `https://<your-broker>/callback`).
+   Note the **Client ID** and **Client Secret**.
+2. Deploy an OAuth broker. A well-known, tiny one is
+   [`sterlingwes/decap-proxy`](https://github.com/sterlingwes/decap-proxy) or
+   [`ublabs/netlify-cms-oauth`](https://github.com/vencax/netlify-cms-github-oauth-provider)
+   — deploy to Vercel/Cloudflare Workers/Render (all have free tiers) and set
+   `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` env vars from step 1.
+3. Put the broker's base URL in `public/admin/config.yml`:
+   ```yaml
+   backend:
+     name: github
+     repo: punitporwal07/blog
+     branch: main
+     base_url: https://<your-broker>       # <-- the broker origin
+     auth_endpoint: /auth
+   ```
+4. Push. Visit `https://punitporwal07.github.io/blog/admin/`, click
+   "Login with GitHub", authorize, and start writing.
+
+**Option B — host on Netlify instead (no separate broker).**
+
+Netlify bundles the OAuth broker (Netlify Identity + Git Gateway), so you skip
+the broker deploy entirely. Trade-off: you'd move hosting from GitHub Pages to
+Netlify (which also removes the `/blog` base-path quirk if you serve from the
+site root). If you want this, drop the `base_url`/`auth_endpoint` lines and
+follow Decap's "Git Gateway" backend docs.
+
+### How it maps to the content
+
+`public/admin/config.yml` defines one collection, **Articles**, pointing at
+`src/content/blog/`. Its fields match the front-matter schema exactly (title,
+description, pubDate, updatedDate, tags, originalUrl, draft, body). Images
+uploaded in the editor land in `public/blog-images/` and resolve at
+`/blog/blog-images/...`, matching existing posts.
+
+`publish_mode: editorial_workflow` means posts go through Draft → In review →
+Ready before publishing (each stage is a commit/PR), so nothing goes live by
+accident.
+
+### Note on the two gates
+
+- The cosmetic `/login` passphrase gate only affects *reading* the rendered
+  site (and is not real security — see below).
+- The `/admin` editor is gated by *real* GitHub auth for *writing*. `/admin` is
+  a static file bundle, so it is not affected by the reading gate.
+
 ## Images
 
 `scripts/download-images.mjs` downloads all Blogger-hosted images into

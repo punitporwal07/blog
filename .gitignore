@@ -10,6 +10,11 @@ data/convert.log
 data/img.log
 data/install.log
 
+# OAuth broker (Cloudflare Worker) local artifacts
+oauth-broker/node_modules/
+oauth-broker/.wrangler/
+.dev.vars
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
