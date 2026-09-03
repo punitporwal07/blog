@@ -59,10 +59,20 @@ const year = new Date().getFullYear();
           <a class="site-title" href={url("/")}>cloudnetes<span class="dot">.</span></a>
           <span class="site-tagline">Cloud Native · Kubernetes · DevOps</span>
         </div>
+        <form class="header-search" role="search" action={url("/search")} method="get">
+          <label class="visually-hidden" for="header-search-input">Search articles</label>
+          <input
+            id="header-search-input"
+            type="search"
+            name="q"
+            placeholder="Search articles…"
+            autocomplete="off"
+            aria-label="Search articles"
+          />
+        </form>
         <nav class="nav">
           <a href={url("/")}>Articles</a>
           <a href={url("/tags")}>Topics</a>
-          <a href={url("/search")}>Search</a>
           <a href="#" id="signout" class="cta">Sign out</a>
         </nav>
       </div>
