@@ -1,0 +1,26 @@
+{
+  "name": "cloudnetes-blog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Migration of the cloudnetes Blogger blog to a modern static site (Astro).",
+  "scripts": {
+    "fetch:feed": "node scripts/fetch-feed.mjs",
+    "convert": "node scripts/convert.mjs",
+    "images": "node scripts/download-images.mjs",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^4.16.18",
+    "@astrojs/rss": "^4.0.11",
+    "@astrojs/sitemap": "^3.2.1"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
+  }
+}

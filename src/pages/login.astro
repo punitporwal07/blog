@@ -1,0 +1,90 @@
+---
+// COSMETIC LOGIN GATE — NOT REAL SECURITY.
+//
+// This is a client-side "soft gate". The site is fully static: every article's
+// HTML is already present in the deployed files and reachable by anyone who
+// disables JavaScript, reads the network tab, or hits a URL directly. This
+// page only *hides* content behind a shared passphrase for casual visitors.
+// If you ever need genuine access control, use host-level auth (Cloudflare
+// Access / Netlify / Vercel) or convert the site to SSR with real sessions.
+//
+// The passphrase below is shipped to the browser, so treat it as public.
+import "../styles/global.css";
+
+// Change this to your chosen shared passphrase.
+const PASSPHRASE = "cloudnetes";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Sign in — cloudnetes</title>
+  </head>
+  <body style="background: linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <main style="width: 100%;">
+      <div style="max-width: 380px; margin: 0 auto; background: var(--surface); border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); padding: 40px 36px;">
+        <div style="width: 48px; height: 4px; background: var(--orange); border-radius: 2px; margin-bottom: 20px;"></div>
+        <h1 style="margin: 0 0 6px; color: var(--ink); font-size: 1.6rem; font-weight: 800;">cloudnetes<span style="color: var(--orange);">.</span></h1>
+        <p style="color: var(--text-muted); margin: 0 0 24px; font-size: 0.95rem;">
+          Enter the passphrase to continue.
+        </p>
+
+        <form id="login-form" autocomplete="off">
+          <input
+            id="passphrase"
+            type="password"
+            placeholder="Passphrase"
+            aria-label="Passphrase"
+            style="width: 100%; padding: 11px 14px; font-size: 1rem; background: #fff; color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px;"
+            autofocus
+          />
+          <button
+            type="submit"
+            style="margin-top: 14px; width: 100%; padding: 11px 14px; font-size: 1rem; background: var(--orange); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 700;"
+          >
+            Enter
+          </button>
+          <p
+            id="error"
+            style="color: #d13212; font-size: 0.9rem; margin-top: 12px; display: none;"
+          >
+            Incorrect passphrase.
+          </p>
+        </form>
+
+        <p style="color: var(--text-muted); font-size: 0.72rem; margin: 32px 0 0;">
+          Note: this gate is cosmetic only and does not secure the content.
+        </p>
+      </div>
+    </main>
+
+    <script is:inline define:vars={{ PASSPHRASE, BASE: import.meta.env.BASE_URL }}>
+      const KEY = "cn_gate_ok";
+      const base = BASE.replace(/\/$/, "");
+      const form = document.getElementById("login-form");
+      const input = document.getElementById("passphrase");
+      const error = document.getElementById("error");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (input.value === PASSPHRASE) {
+          try {
+            sessionStorage.setItem(KEY, "1");
+          } catch (_) {}
+          // Return to where the user was headed, else the site home. Only allow
+          // same-origin absolute paths.
+          const params = new URLSearchParams(location.search);
+          const next = params.get("next") || base + "/";
+          location.href = next.startsWith("/") ? next : base + "/";
+        } else {
+          error.style.display = "block";
+          input.value = "";
+          input.focus();
+        }
+      });
+    </script>
+  </body>
+</html>

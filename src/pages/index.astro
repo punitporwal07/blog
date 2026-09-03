@@ -1,0 +1,46 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { formatDate, url } from "../utils/format";
+
+const posts = (await getCollection("blog", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<BaseLayout title="cloudnetes — Cloud Native, Kubernetes & DevOps">
+  <section class="hero" slot="hero">
+    <div class="container">
+      <div class="accent-bar"></div>
+      <h1>cloudnetes Blog</h1>
+      <p>
+        Hands-on articles on Cloud, Kubernetes, DevOps and middleware — {posts.length}
+        deep-dives, cheat sheets and how-tos.
+      </p>
+    </div>
+  </section>
+
+  <h2 class="section-title">Latest articles</h2>
+  <p class="section-sub">Fresh from the archive, newest first.</p>
+
+  <ul class="card-grid">
+    {
+      posts.map((post) => (
+        <li class="card">
+          <div class="card-body">
+            {post.data.tags[0] && <div class="eyebrow">{post.data.tags[0]}</div>}
+            <h2>
+              <a href={url(`/blog/${post.slug}`)}>{post.data.title}</a>
+            </h2>
+            {post.data.description && (
+              <p class="excerpt">{post.data.description}</p>
+            )}
+            <div class="card-meta">
+              <span>{formatDate(post.data.pubDate)}</span>
+            </div>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</BaseLayout>

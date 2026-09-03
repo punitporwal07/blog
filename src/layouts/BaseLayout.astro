@@ -1,0 +1,99 @@
+---
+import "../styles/global.css";
+
+import { url } from "../utils/format";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Cloud Native, Kubernetes & DevOps notes." } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={url("/favicon.svg")} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="cloudnetes"
+      href={url("/rss.xml")}
+    />
+    <!--
+      COSMETIC GATE — NOT REAL SECURITY. Runs before render: if the visitor has
+      not "signed in" (a sessionStorage flag set by /login), redirect them to
+      the login page. The page HTML is still fully present in the static build,
+      so this only deters casual viewing. It intentionally does nothing when JS
+      is disabled or for crawlers.
+    -->
+    <script is:inline define:vars={{ BASE: import.meta.env.BASE_URL }}>
+      (function () {
+        try {
+          var KEY = "cn_gate_ok";
+          var base = BASE.replace(/\/$/, ""); // "" or "/blog"
+          var loginPath = base + "/login";
+          var path = location.pathname.replace(/\/$/, "");
+          var isLogin = path === loginPath;
+          if (!isLogin && sessionStorage.getItem(KEY) !== "1") {
+            var next = encodeURIComponent(location.pathname + location.search);
+            location.replace(loginPath + "?next=" + next);
+          }
+        } catch (e) {
+          /* if storage is unavailable, do not block */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <div class="brand">
+          <a class="site-title" href={url("/")}>cloudnetes<span class="dot">.</span></a>
+          <span class="site-tagline">Cloud Native · Kubernetes · DevOps</span>
+        </div>
+        <nav class="nav">
+          <a href={url("/")}>Articles</a>
+          <a href={url("/tags")}>Topics</a>
+          <a href="#" id="signout" class="cta">Sign out</a>
+        </nav>
+      </div>
+    </header>
+
+    <slot name="hero" />
+
+    <main>
+      <div class="container">
+        <slot />
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        © cloudnetes {year} · Migrated from Blogger · Built with Astro
+      </div>
+    </footer>
+
+    <script is:inline define:vars={{ BASE: import.meta.env.BASE_URL }}>
+      (function () {
+        var btn = document.getElementById("signout");
+        if (!btn) return;
+        var base = BASE.replace(/\/$/, "");
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          try {
+            sessionStorage.removeItem("cn_gate_ok");
+          } catch (_) {}
+          location.href = base + "/login";
+        });
+      })();
+    </script>
+  </body>
+</html>

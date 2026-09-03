@@ -1,0 +1,32 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { tagSlug, url } from "../../utils/format";
+
+const posts = await getCollection("blog", ({ data }) => !data.draft);
+
+// Count posts per tag.
+const counts = new Map<string, number>();
+for (const post of posts) {
+  for (const tag of post.data.tags) {
+    counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+}
+const tags = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+---
+
+<BaseLayout title="Topics — cloudnetes">
+  <h2 class="section-title">Browse by topic</h2>
+  <p class="section-sub">{tags.length} topics across the archive.</p>
+  <ul class="tags">
+    {
+      tags.map(([tag, count]) => (
+        <li>
+          <a class="tag" href={url(`/tags/${tagSlug(tag)}`)}>
+            {tag} ({count})
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</BaseLayout>

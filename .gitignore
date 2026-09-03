@@ -1,0 +1,15 @@
+# Dependencies & build output
+node_modules/
+dist/
+.astro/
+
+# Logs (build/convert/image scripts write these)
+*.log
+data/build.log
+data/convert.log
+data/img.log
+data/install.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

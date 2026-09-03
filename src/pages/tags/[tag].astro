@@ -1,0 +1,55 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { formatDate, tagSlug, url } from "../../utils/format";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
+
+  // Group posts by tag slug, keeping the original display label.
+  const byTag = new Map<
+    string,
+    { label: string; posts: typeof posts }
+  >();
+  for (const post of posts) {
+    for (const tag of post.data.tags) {
+      const slug = tagSlug(tag);
+      if (!byTag.has(slug)) byTag.set(slug, { label: tag, posts: [] });
+      byTag.get(slug)!.posts.push(post);
+    }
+  }
+
+  return [...byTag.entries()].map(([slug, { label, posts }]) => ({
+    params: { tag: slug },
+    props: {
+      label,
+      posts: posts.sort(
+        (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+      ),
+    },
+  }));
+}
+
+const { label, posts } = Astro.props;
+---
+
+<BaseLayout title={`Topic: ${label} — cloudnetes`}>
+  <p style="margin-top: 0;"><a href={url("/tags")}>&larr; All topics</a></p>
+  <h2 class="section-title">
+    {label} <span style="color: var(--text-muted); font-weight: 400;">({posts.length})</span>
+  </h2>
+  <p class="section-sub">Articles tagged “{label}”.</p>
+
+  <ul class="post-list">
+    {
+      posts.map((post) => (
+        <li>
+          <h2>
+            <a href={url(`/blog/${post.slug}`)}>{post.data.title}</a>
+          </h2>
+          <div class="post-meta">{formatDate(post.data.pubDate)}</div>
+        </li>
+      ))
+    }
+  </ul>
+</BaseLayout>

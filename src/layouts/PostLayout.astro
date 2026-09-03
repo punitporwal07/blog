@@ -1,0 +1,61 @@
+---
+import type { CollectionEntry } from "astro:content";
+import BaseLayout from "./BaseLayout.astro";
+import { formatDate, tagSlug, url } from "../utils/format";
+
+interface Props {
+  post: CollectionEntry<"blog">;
+}
+
+const { post } = Astro.props;
+const { title, description, pubDate, updatedDate, tags, originalUrl } = post.data;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="article-wrap">
+    <nav class="breadcrumb">
+      <a href={url("/")}>Home</a> &rsaquo;
+      <a href={url("/tags")}>Topics</a>
+      {tags[0] && (
+        <>
+          {" "}&rsaquo; <a href={url(`/tags/${tagSlug(tags[0])}`)}>{tags[0]}</a>
+        </>
+      )}
+    </nav>
+
+    <header class="article-header">
+      {tags[0] && <div class="eyebrow" style="color: var(--orange); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">{tags[0]}</div>}
+      <h1>{title}</h1>
+      <div class="article-meta">
+        Published {formatDate(pubDate)}
+        {updatedDate && ` · Updated ${formatDate(updatedDate)}`}
+      </div>
+    </header>
+
+    <article class="prose">
+      <slot />
+    </article>
+
+    {
+      tags.length > 0 && (
+        <ul class="tags">
+          {tags.map((tag) => (
+            <li>
+              <a class="tag" href={url(`/tags/${tagSlug(tag)}`)}>
+                {tag}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      originalUrl && (
+        <p class="article-footer">
+          Originally published on <a href={originalUrl}>Blogger</a>.
+        </p>
+      )
+    }
+  </div>
+</BaseLayout>
