@@ -61,14 +61,22 @@ const year = new Date().getFullYear();
         </div>
         <form class="header-search" role="search" action={url("/search")} method="get">
           <label class="visually-hidden" for="header-search-input">Search articles</label>
+          <span class="header-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
           <input
             id="header-search-input"
             type="search"
             name="q"
             placeholder="Search articles…"
             autocomplete="off"
+            role="combobox"
+            aria-expanded="false"
+            aria-controls="header-search-results"
+            aria-autocomplete="list"
             aria-label="Search articles"
           />
+          <div id="header-search-results" class="header-search-results" role="listbox" hidden></div>
         </form>
         <nav class="nav">
           <a href={url("/")}>Articles</a>
@@ -103,6 +111,156 @@ const year = new Date().getFullYear();
             sessionStorage.removeItem("cn_gate_ok");
           } catch (_) {}
           location.href = base + "/login";
+        });
+      })();
+    </script>
+
+    <!-- Live header search: AWS-style dropdown of matching articles. -->
+    <script is:inline define:vars={{ BASE: import.meta.env.BASE_URL }}>
+      (function () {
+        var base = BASE.replace(/\/$/, "");
+        var form = document.querySelector(".header-search");
+        if (!form) return;
+        var input = document.getElementById("header-search-input");
+        var panel = document.getElementById("header-search-results");
+        var data = null;
+        var loading = false;
+        var active = -1; // highlighted result index
+
+        function load() {
+          if (data || loading) return;
+          loading = true;
+          fetch(base + "/search.json")
+            .then(function (r) { return r.json(); })
+            .then(function (json) { data = json; loading = false; run(); })
+            .catch(function () { loading = false; });
+        }
+
+        function score(post, tokens) {
+          var title = post.title.toLowerCase();
+          var desc = (post.description || "").toLowerCase();
+          var tags = (post.tags || []).join(" ").toLowerCase();
+          var body = (post.body || "").toLowerCase();
+          var total = 0;
+          for (var i = 0; i < tokens.length; i++) {
+            var t = tokens[i], s = 0;
+            if (title.indexOf(t) !== -1) s += 10;
+            if (tags.indexOf(t) !== -1) s += 5;
+            if (desc.indexOf(t) !== -1) s += 3;
+            if (body.indexOf(t) !== -1) s += 1;
+            if (s === 0) return 0;
+            total += s;
+          }
+          return total;
+        }
+
+        function close() {
+          panel.hidden = true;
+          panel.innerHTML = "";
+          active = -1;
+          input.setAttribute("aria-expanded", "false");
+        }
+
+        function run() {
+          var q = input.value.trim();
+          var tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+          if (!tokens.length) { close(); return; }
+          if (!data) { load(); return; }
+
+          var scored = [];
+          for (var i = 0; i < data.length; i++) {
+            var s = score(data[i], tokens);
+            if (s > 0) scored.push({ s: s, post: data[i] });
+          }
+          scored.sort(function (a, b) {
+            if (b.s !== a.s) return b.s - a.s;
+            return new Date(b.post.pubDate) - new Date(a.post.pubDate);
+          });
+
+          panel.innerHTML = "";
+          active = -1;
+          if (!scored.length) {
+            var empty = document.createElement("div");
+            empty.className = "hs-empty";
+            empty.textContent = 'No matches for "' + q + '"';
+            panel.appendChild(empty);
+          } else {
+            var top = scored.slice(0, 8);
+            for (var j = 0; j < top.length; j++) {
+              var post = top[j].post;
+              var a = document.createElement("a");
+              a.className = "hs-item";
+              a.setAttribute("role", "option");
+              a.href = base + "/blog/" + post.slug;
+              var t = document.createElement("span");
+              t.className = "hs-title";
+              t.textContent = post.title;
+              a.appendChild(t);
+              if (post.tags && post.tags[0]) {
+                var tag = document.createElement("span");
+                tag.className = "hs-tag";
+                tag.textContent = post.tags[0];
+                a.appendChild(tag);
+              }
+              panel.appendChild(a);
+            }
+            if (scored.length > top.length) {
+              var more = document.createElement("a");
+              more.className = "hs-more";
+              more.href = base + "/search?q=" + encodeURIComponent(q);
+              more.textContent = "See all " + scored.length + " results";
+              panel.appendChild(more);
+            }
+          }
+          panel.hidden = false;
+          input.setAttribute("aria-expanded", "true");
+        }
+
+        function items() {
+          return panel.querySelectorAll(".hs-item, .hs-more");
+        }
+        function highlight(idx) {
+          var els = items();
+          for (var i = 0; i < els.length; i++) els[i].classList.remove("is-active");
+          if (idx >= 0 && idx < els.length) {
+            els[idx].classList.add("is-active");
+            els[idx].scrollIntoView({ block: "nearest" });
+          }
+          active = idx;
+        }
+
+        var timer = null;
+        input.addEventListener("input", function () {
+          clearTimeout(timer);
+          timer = setTimeout(run, 100);
+        });
+        input.addEventListener("focus", function () {
+          load();
+          if (input.value.trim()) run();
+        });
+        input.addEventListener("keydown", function (e) {
+          var els = items();
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (panel.hidden) run();
+            highlight(active + 1 >= els.length ? 0 : active + 1);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            highlight(active - 1 < 0 ? els.length - 1 : active - 1);
+          } else if (e.key === "Enter") {
+            if (active >= 0 && els[active]) {
+              e.preventDefault();
+              window.location.href = els[active].href;
+            }
+            // otherwise let the form submit -> /search page
+          } else if (e.key === "Escape") {
+            close();
+            input.blur();
+          }
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!form.contains(e.target)) close();
         });
       })();
     </script>
