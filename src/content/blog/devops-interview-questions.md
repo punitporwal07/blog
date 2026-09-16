@@ -1,5 +1,6 @@
 ---
 title: DevOps Interview Questions
+description: DevOps Engineer - 1st Round Interview Questions
 pubDate: 2026-09-16T08:26
 tags:
   - DevOps
