@@ -8,6 +8,7 @@ updatedDate: 2023-10-25T05:22:17.773-07:00
 tags:
   - K8S
   - kubectl
+  - cheatsheet
 originalUrl: https://cloudnetes.blogspot.com/2020/04/kubernetes-cheetsheet.html
 ---
 ![](/blog/blog-images/kubectl-625f4982ea1d.png)
